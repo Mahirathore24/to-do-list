@@ -1,0 +1,27 @@
+services:
+  # Backend API Service
+  - type: web
+    name: todo-backend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: cd my-backend && npm install
+    startCommand: cd my-backend && node index.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: PORT
+        value: 5000
+    healthCheckPath: /api/tasks
+
+  # Frontend Static Site
+  - type: web
+    name: todo-frontend
+    runtime: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/dist
+    pullRequestPreviewsEnabled: true
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=0, must-revalidate
