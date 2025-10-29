@@ -1,0 +1,1 @@
+web: cd my-backend && node index.js

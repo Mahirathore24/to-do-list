@@ -1,5 +1,14 @@
 {
+  "name": "todo-backend",
+  "version": "1.0.0",
+  "main": "my-backend/index.js",
+  "scripts": {
+    "start": "node my-backend/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "gh-pages": "^6.2.0"
   }
 }
