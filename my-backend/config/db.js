@@ -8,9 +8,8 @@ const connectDB = async () => {
     console.log('Connecting to MongoDB...');
     console.log('Using URI:', mongoURI.replace(/\/\/.*@/, '//<credentials>@')); // Hide credentials in logs
     
+    // Remove deprecated options - they're now default in MongoDB driver 4.x+
     const conn = await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000, // Timeout after 5s
     });
     
