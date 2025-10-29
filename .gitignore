@@ -1,5 +1,11 @@
 # See client/.gitignore and server/.gitignore for specific ignores
 
+# Dependencies
+node_modules/
+**/node_modules/
+package-lock.json
+yarn.lock
+
 # OS files
 .DS_Store
 Thumbs.db
