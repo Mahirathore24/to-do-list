@@ -1,8 +1,81 @@
+:root {
+  --bg-gradient-start: #f9fafc;
+  --bg-gradient-end: #f7e8ff;
+  --text-color: #333;
+  --card-bg: white;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --border-color: #e0e0e0;
+}
+
+body.dark-mode {
+  --bg-gradient-start: #1a1a2e;
+  --bg-gradient-end: #16213e;
+  --text-color: #e0e0e0;
+  --card-bg: #0f3460;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --border-color: #2d4059;
+}
+
 body {
   margin: 0;
   font-family: 'Comic Sans MS', cursive, sans-serif;
-  background: linear-gradient(135deg, #f9fafc 0%, #f7e8ff 100%);
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   min-height: 100vh;
+  color: var(--text-color);
+  transition: all 0.3s ease;
+}
+
+.user-header {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.user-header span {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: white;
+  color: #667eea;
+  transform: translateY(-2px);
+}
+
+.theme-toggle {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.3rem;
+  transition: all 0.3s ease;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: white;
+  transform: rotate(180deg) scale(1.1);
 }
 
 .crazy-header {
@@ -60,6 +133,13 @@ body {
   justify-content: space-between;
   box-shadow: 0 2px 12px 0 #38f9d799;
   animation: crazy-pop 0.5s;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .crazy-list li {
+  background: linear-gradient(90deg, #1e3a5f 0%, #2a5470 100%);
+  color: #e0e0e0;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.5);
 }
 @keyframes crazy-pop {
   0% { transform: scale(0.7) rotate(-10deg); opacity: 0; }
@@ -92,6 +172,24 @@ body {
   text-decoration: line-through;
   opacity: 0.6;
 }
+
+.task-category {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 8px;
+  text-transform: uppercase;
+}
+
+body.dark-mode .task-category {
+  background: linear-gradient(135deg, #38f9d7, #43e97b);
+  color: #1a1a2e;
+}
+
 .task-edit {
   background: transparent;
   border: 1px solid #fff6;
@@ -124,6 +222,26 @@ body {
   background: rgba(255,255,255,0.6);
   border-radius: 999px;
   padding: 6px;
+  position: relative;
+}
+
+body.dark-mode .progress-wrap {
+  background: rgba(255,255,255,0.1);
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  color: #667eea;
+  font-size: 0.9rem;
+  z-index: 2;
+}
+
+body.dark-mode .progress-text {
+  color: #38f9d7;
 }
 .progress-bar {
   height: 12px;
@@ -252,6 +370,47 @@ body {
   transform: translateY(-10px) scale(0);
   opacity: 0.9;
   animation: sparkle 700ms forwards;
+}
+
+/* Quote Box */
+.quote-box {
+  max-width: 600px;
+  margin: 1.5rem auto;
+  padding: 1.5rem 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-left: 4px solid #667eea;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .quote-box {
+  background: rgba(15, 52, 96, 0.6);
+  border-left: 4px solid #38f9d7;
+  color: #e0e0e0;
+}
+
+.quote-text {
+  font-size: 1.1rem;
+  font-style: italic;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+body.dark-mode .quote-text {
+  color: #e0e0e0;
+}
+
+.quote-author {
+  text-align: right;
+  font-size: 0.95rem;
+  color: #667eea;
+  font-weight: 600;
+  margin: 0;
+}
+
+body.dark-mode .quote-author {
+  color: #38f9d7;
 }
 
 @keyframes sparkle {
