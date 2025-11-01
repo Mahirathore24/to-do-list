@@ -1,9 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Auth from './Auth';
 
-// Configure axios defaults
-axios.defaults.baseURL = 'http://localhost:5000';
+// Using localStorage as backend - no server needed!
+const API = {
+  login: async (email, password) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if (!user) throw new Error('Invalid credentials');
+    const token = 'token_' + Date.now();
+    localStorage.setItem('currentUser', JSON.stringify({ user, token }));
+    return { user, token };
+  },
+  signup: async (name, email, password) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    if (users.find(u => u.email === email)) throw new Error('User already exists');
+    const user = { id: Date.now(), name, email, password };
+    users.push(user);
+    localStorage.setItem('users', JSON.stringify(users));
+    const token = 'token_' + Date.now();
+    localStorage.setItem('currentUser', JSON.stringify({ user, token }));
+    return { user, token };
+  },
+  getTasks: async () => {
+    const current = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    return allTasks.filter(t => t.userId === current.user?.id);
+  },
+  addTask: async (task) => {
+    const current = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    const newTask = { ...task, id: Date.now(), userId: current.user.id };
+    allTasks.push(newTask);
+    localStorage.setItem('tasks', JSON.stringify(allTasks));
+    return allTasks.filter(t => t.userId === current.user.id);
+  },
+  updateTask: async (id, updates) => {
+    const current = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    const taskIndex = allTasks.findIndex(t => t.id === id && t.userId === current.user.id);
+    if (taskIndex !== -1) {
+      allTasks[taskIndex] = { ...allTasks[taskIndex], ...updates };
+      localStorage.setItem('tasks', JSON.stringify(allTasks));
+    }
+    return allTasks.filter(t => t.userId === current.user.id);
+  },
+  deleteTask: async (id) => {
+    const current = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const allTasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    const filtered = allTasks.filter(t => !(t.id === id && t.userId === current.user.id));
+    localStorage.setItem('tasks', JSON.stringify(filtered));
+    return filtered.filter(t => t.userId === current.user.id);
+  }
+};
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -29,15 +77,12 @@ export default function App() {
   const [quote, setQuote] = useState({ text: 'Loading inspiration...', author: '' });
   // Check if user is logged in on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    const storedUser = localStorage.getItem('user');
+    const current = JSON.parse(localStorage.getItem('currentUser') || '{}');
     const storedTheme = localStorage.getItem('theme');
     
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      // Set axios default authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+    if (current.token && current.user) {
+      setToken(current.token);
+      setUser(current.user);
     }
     
     if (storedTheme === 'dark') {
@@ -49,10 +94,8 @@ export default function App() {
   // Fetch all tasks from backend
   const fetchTasks = async () => {
     try {
-      const res = await axios.get('/api/tasks');
-      if (Array.isArray(res.data)) {
-        setTasks(res.data);
-      }
+      const userTasks = await API.getTasks();
+      setTasks(userTasks);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
     }
@@ -92,7 +135,6 @@ export default function App() {
   const handleLogin = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
   };
 
   // Handle logout
@@ -100,9 +142,7 @@ export default function App() {
     setUser(null);
     setToken(null);
     setTasks([]);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
-    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('currentUser');
   };
 
   // Toggle dark mode
@@ -174,31 +214,22 @@ export default function App() {
     setBtnAnim('pop');
     
     try {
-      // If attachment present, upload first
-      let attachments = [];
-      if (attachmentFile) {
-        const fd = new FormData();
-        fd.append('file', attachmentFile);
-        const up = await axios.post('/api/uploads', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-        if (up.data && up.data.url) attachments.push(up.data.url);
-      }
-
       const payload = {
         text: input,
         description: description,
         category: category,
+        completed: false,
         dueDate: dueDate || null,
         reminderAt: reminderAt || null,
-        tags: tagsInput || '',
+        tags: tagsInput ? tagsInput.split(',').map(t => t.trim()) : [],
         priority,
-        attachments,
+        attachments: [],
         recurring: { interval: recurring, every: 1 }
       };
 
-      const res = await axios.post('/api/tasks', payload);
-      if (Array.isArray(res.data)) {
-        setTasks(res.data);
-      }
+      const updatedTasks = await API.addTask(payload);
+      setTasks(updatedTasks);
+      
       // clear inputs
       setInput('');
       setDescription('');
@@ -222,10 +253,8 @@ export default function App() {
   // Remove task
   const removeTask = async (id) => {
     try {
-      const res = await axios.delete(`/api/tasks/${id}`);
-      if (Array.isArray(res.data)) {
-        setTasks(res.data);
-      }
+      const updatedTasks = await API.deleteTask(id);
+      setTasks(updatedTasks);
     } catch (err) {
       console.error('Failed to remove task:', err);
     }
@@ -234,12 +263,10 @@ export default function App() {
   // Toggle complete
   const toggleComplete = async (task) => {
     try {
-      const res = await axios.patch(`/api/tasks/${task._id || task.id}`, { 
+      const updatedTasks = await API.updateTask(task.id, {
         completed: !task.completed 
       });
-      if (Array.isArray(res.data)) {
-        setTasks(res.data);
-      }
+      setTasks(updatedTasks);
     } catch (err) {
       console.error('Failed to toggle task:', err);
     }
@@ -247,7 +274,7 @@ export default function App() {
 
   // Start editing
   const startEdit = (task) => {
-    setEditingId(task._id || task.id);
+    setEditingId(task.id);
     setEditingText(task.text);
     setEditingDescription(task.description || '');
   };
@@ -261,22 +288,18 @@ export default function App() {
   const saveEdit = async (id) => {
     if (!editingText.trim()) return;
     try {
-      const res = await axios.patch(`/api/tasks/${id}`, { 
+      const updatedTasks = await API.updateTask(id, { 
         text: editingText,
         description: editingDescription
       });
-      if (Array.isArray(res.data)) {
-        setTasks(res.data);
-      }
+      setTasks(updatedTasks);
     } catch (err) {
       console.error('Failed to update task:', err);
     }
     setEditingId(null);
     setEditingText('');
     setEditingDescription('');
-  };
-
-  // derived list by filter
+  };  // derived list by filter
   const visible = tasks
     .filter(t => (filter === 'all') ? true : (filter === 'active') ? !t.completed : t.completed)
     .filter(t => searchQuery ? t.text.toLowerCase().includes(searchQuery.toLowerCase()) : true);

@@ -1,6 +1,27 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import './Auth.css';
+
+// localStorage-based auth - no server needed!
+const API = {
+  login: async (email, password) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const user = users.find(u => u.email === email && u.password === password);
+    if (!user) throw new Error('Invalid credentials');
+    const token = 'token_' + Date.now();
+    localStorage.setItem('currentUser', JSON.stringify({ user, token }));
+    return { user, token };
+  },
+  signup: async (name, email, password) => {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    if (users.find(u => u.email === email)) throw new Error('User already exists');
+    const user = { id: Date.now(), name, email, password };
+    users.push(user);
+    localStorage.setItem('users', JSON.stringify(users));
+    const token = 'token_' + Date.now();
+    localStorage.setItem('currentUser', JSON.stringify({ user, token }));
+    return { user, token };
+  }
+};
 
 export default function Auth({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -23,41 +44,17 @@ export default function Auth({ onLogin }) {
     setLoading(true);
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-      const payload = isLogin
-        ? { email: formData.email, password: formData.password }
-        : formData;
-
-      console.log('Sending request to:', `http://localhost:5000${endpoint}`);
-      console.log('Payload:', payload);
-
-      const res = await axios.post(`http://localhost:5000${endpoint}`, payload, {
-        timeout: 10000, // 10 second timeout
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Response:', res.data);
-      
-      if (res.data.success) {
-        // Store token in localStorage
-        localStorage.setItem('auth_token', res.data.token);
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-        onLogin(res.data.user, res.data.token);
+      let result;
+      if (isLogin) {
+        result = await API.login(formData.email, formData.password);
       } else {
-        setError('Login failed. Please try again.');
-        setLoading(false);
+        result = await API.signup(formData.name, formData.email, formData.password);
       }
+      
+      onLogin(result.user, result.token);
     } catch (err) {
       console.error('Auth error:', err);
-      if (err.code === 'ECONNABORTED') {
-        setError('Request timeout. Please check your connection.');
-      } else if (err.code === 'ERR_NETWORK') {
-        setError('Cannot connect to server. Please make sure backend is running.');
-      } else {
-        setError(err.response?.data?.error || 'Something went wrong. Please try again.');
-      }
+      setError(err.message || 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
